@@ -34,6 +34,7 @@ import { OllamaProvider } from "./providers/OllamaProvider"
 import { OpenAICompatibleProvider } from "./providers/OpenAICompatible"
 import { OpenAINativeProvider } from "./providers/OpenAINative"
 import { OpenRouterProvider } from "./providers/OpenRouterProvider"
+import { PuterProvider } from "./providers/PuterProvider"
 import { QwenCodeProvider } from "./providers/QwenCodeProvider"
 import { QwenProvider } from "./providers/QwenProvider"
 import { RequestyProvider } from "./providers/RequestyProvider"
@@ -47,6 +48,8 @@ import { XaiProvider } from "./providers/XaiProvider"
 import { ZAiProvider } from "./providers/ZAiProvider"
 import { useApiConfigurationHandlers } from "./utils/useApiConfigurationHandlers"
 
+
+
 interface ApiOptionsProps {
 	showModelOptions: boolean
 	apiErrorMessage?: string
@@ -55,12 +58,18 @@ interface ApiOptionsProps {
 	currentMode: Mode
 }
 
+
+
 // This is necessary to ensure dropdown opens downward, important for when this is used in popup
 export const DROPDOWN_Z_INDEX = OPENROUTER_MODEL_PICKER_Z_INDEX + 2 // Higher than the OpenRouterModelPicker's and ModelSelectorTooltip's z-index
+
+
 
 export const DropdownContainer = styled.div<{ zIndex?: number }>`
 	position: relative;
 	z-index: ${(props) => props.zIndex || DROPDOWN_Z_INDEX};
+
+
 
 	// Force dropdowns to open downward
 	& vscode-dropdown::part(listbox) {
@@ -69,6 +78,8 @@ export const DropdownContainer = styled.div<{ zIndex?: number }>`
 		bottom: auto !important;
 	}
 `
+
+
 
 declare module "vscode" {
 	interface LanguageModelChatSelector {
@@ -79,15 +90,25 @@ declare module "vscode" {
 	}
 }
 
+
+
 const ApiOptions = ({ showModelOptions, apiErrorMessage, modelIdErrorMessage, isPopup, currentMode }: ApiOptionsProps) => {
 	// Use full context state for immediate save payload
 	const { apiConfiguration } = useExtensionState()
 
+
+
 	const { selectedProvider } = normalizeApiConfiguration(apiConfiguration, currentMode)
+
+
 
 	const { handleModeFieldChange } = useApiConfigurationHandlers()
 
+
+
 	const [_ollamaModels, setOllamaModels] = useState<string[]>([])
+
+
 
 	// Poll ollama/vscode-lm models
 	const requestLocalModels = useCallback(async () => {
@@ -114,6 +135,8 @@ const ApiOptions = ({ showModelOptions, apiErrorMessage, modelIdErrorMessage, is
 	}, [selectedProvider, requestLocalModels])
 	useInterval(requestLocalModels, selectedProvider === "ollama" ? 2000 : null)
 
+
+
 	// Provider search state
 	const [searchTerm, setSearchTerm] = useState("")
 	const [isDropdownVisible, setIsDropdownVisible] = useState(false)
@@ -121,6 +144,8 @@ const ApiOptions = ({ showModelOptions, apiErrorMessage, modelIdErrorMessage, is
 	const dropdownRef = useRef<HTMLDivElement>(null)
 	const itemRefs = useRef<(HTMLDivElement | null)[]>([])
 	const dropdownListRef = useRef<HTMLDivElement>(null)
+
+
 
 	const providerOptions = useMemo(
 		() => [
@@ -159,13 +184,18 @@ const ApiOptions = ({ showModelOptions, apiErrorMessage, modelIdErrorMessage, is
 			{ value: "sambanova", label: "SambaNova" },
 			{ value: "huawei-cloud-maas", label: "Huawei Cloud MaaS" },
 			{ value: "dify", label: "Dify.ai" },
+			{ value: "puter", label: "Puter" },
 		],
 		[],
 	)
 
+
+
 	const currentProviderLabel = useMemo(() => {
 		return providerOptions.find((option) => option.value === selectedProvider)?.label || selectedProvider
 	}, [providerOptions, selectedProvider])
+
+
 
 	// Sync search term with current provider when not searching
 	useEffect(() => {
@@ -174,12 +204,16 @@ const ApiOptions = ({ showModelOptions, apiErrorMessage, modelIdErrorMessage, is
 		}
 	}, [currentProviderLabel, isDropdownVisible])
 
+
+
 	const searchableItems = useMemo(() => {
 		return providerOptions.map((option) => ({
 			value: option.value,
 			html: option.label,
 		}))
 	}, [providerOptions])
+
+
 
 	const fuse = useMemo(() => {
 		return new Fuse(searchableItems, {
@@ -193,11 +227,15 @@ const ApiOptions = ({ showModelOptions, apiErrorMessage, modelIdErrorMessage, is
 		})
 	}, [searchableItems])
 
+
+
 	const providerSearchResults = useMemo(() => {
 		return searchTerm && searchTerm !== currentProviderLabel
 			? highlight(fuse.search(searchTerm), "provider-item-highlight")
 			: searchableItems
 	}, [searchableItems, searchTerm, fuse, currentProviderLabel])
+
+
 
 	const handleProviderChange = (newProvider: string) => {
 		handleModeFieldChange({ plan: "planModeApiProvider", act: "actModeApiProvider" }, newProvider as any, currentMode)
@@ -205,10 +243,14 @@ const ApiOptions = ({ showModelOptions, apiErrorMessage, modelIdErrorMessage, is
 		setSelectedIndex(-1)
 	}
 
+
+
 	const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
 		if (!isDropdownVisible) {
 			return
 		}
+
+
 
 		switch (event.key) {
 			case "ArrowDown":
@@ -233,6 +275,8 @@ const ApiOptions = ({ showModelOptions, apiErrorMessage, modelIdErrorMessage, is
 		}
 	}
 
+
+
 	// Close dropdown when clicking outside
 	useEffect(() => {
 		const handleClickOutside = (event: MouseEvent) => {
@@ -242,11 +286,15 @@ const ApiOptions = ({ showModelOptions, apiErrorMessage, modelIdErrorMessage, is
 			}
 		}
 
+
+
 		document.addEventListener("mousedown", handleClickOutside)
 		return () => {
 			document.removeEventListener("mousedown", handleClickOutside)
 		}
 	}, [currentProviderLabel])
+
+
 
 	// Reset selection when search term changes
 	useEffect(() => {
@@ -255,6 +303,8 @@ const ApiOptions = ({ showModelOptions, apiErrorMessage, modelIdErrorMessage, is
 			dropdownListRef.current.scrollTop = 0
 		}
 	}, [searchTerm])
+
+
 
 	// Scroll selected item into view
 	useEffect(() => {
@@ -266,14 +316,22 @@ const ApiOptions = ({ showModelOptions, apiErrorMessage, modelIdErrorMessage, is
 		}
 	}, [selectedIndex])
 
+
+
 	/*
 	VSCodeDropdown has an open bug where dynamically rendered options don't auto select the provided value prop. You can see this for yourself by comparing  it with normal select/option elements, which work as expected.
 	https://github.com/microsoft/vscode-webview-ui-toolkit/issues/433
 
+
+
 	In our case, when the user switches between providers, we recalculate the selectedModelId depending on the provider, the default model for that provider, and a modelId that the user may have selected. Unfortunately, the VSCodeDropdown component wouldn't select this calculated value, and would default to the first "Select a model..." option instead, which makes it seem like the model was cleared out when it wasn't.
+
+
 
 	As a workaround, we create separate instances of the dropdown for each provider, and then conditionally render the one that matches the current provider.
 	*/
+
+
 
 	return (
 		<div style={{ display: "flex", flexDirection: "column", gap: 5, marginBottom: isPopup ? -10 : 0 }}>
@@ -346,87 +404,131 @@ const ApiOptions = ({ showModelOptions, apiErrorMessage, modelIdErrorMessage, is
 				</ProviderDropdownWrapper>
 			</DropdownContainer>
 
+
+
 			{apiConfiguration && selectedProvider === "cline" && (
 				<ClineProvider currentMode={currentMode} isPopup={isPopup} showModelOptions={showModelOptions} />
 			)}
+
+
 
 			{apiConfiguration && selectedProvider === "asksage" && (
 				<AskSageProvider currentMode={currentMode} isPopup={isPopup} showModelOptions={showModelOptions} />
 			)}
 
+
+
 			{apiConfiguration && selectedProvider === "anthropic" && (
 				<AnthropicProvider currentMode={currentMode} isPopup={isPopup} showModelOptions={showModelOptions} />
 			)}
+
+
 
 			{apiConfiguration && selectedProvider === "claude-code" && (
 				<ClaudeCodeProvider currentMode={currentMode} isPopup={isPopup} showModelOptions={showModelOptions} />
 			)}
 
+
+
 			{apiConfiguration && selectedProvider === "openai-native" && (
 				<OpenAINativeProvider currentMode={currentMode} isPopup={isPopup} showModelOptions={showModelOptions} />
 			)}
+
+
 
 			{apiConfiguration && selectedProvider === "qwen" && (
 				<QwenProvider currentMode={currentMode} isPopup={isPopup} showModelOptions={showModelOptions} />
 			)}
 
+
+
 			{apiConfiguration && selectedProvider === "qwen-code" && (
 				<QwenCodeProvider currentMode={currentMode} isPopup={isPopup} showModelOptions={showModelOptions} />
 			)}
+
+
 
 			{apiConfiguration && selectedProvider === "doubao" && (
 				<DoubaoProvider currentMode={currentMode} isPopup={isPopup} showModelOptions={showModelOptions} />
 			)}
 
+
+
 			{apiConfiguration && selectedProvider === "mistral" && (
 				<MistralProvider currentMode={currentMode} isPopup={isPopup} showModelOptions={showModelOptions} />
 			)}
+
+
 
 			{apiConfiguration && selectedProvider === "openrouter" && (
 				<OpenRouterProvider currentMode={currentMode} isPopup={isPopup} showModelOptions={showModelOptions} />
 			)}
 
+
+
 			{apiConfiguration && selectedProvider === "deepseek" && (
 				<DeepSeekProvider currentMode={currentMode} isPopup={isPopup} showModelOptions={showModelOptions} />
 			)}
+
+
 
 			{apiConfiguration && selectedProvider === "together" && (
 				<TogetherProvider currentMode={currentMode} isPopup={isPopup} showModelOptions={showModelOptions} />
 			)}
 
+
+
 			{apiConfiguration && selectedProvider === "openai" && (
 				<OpenAICompatibleProvider currentMode={currentMode} isPopup={isPopup} showModelOptions={showModelOptions} />
 			)}
+
+
 
 			{apiConfiguration && selectedProvider === "vercel-ai-gateway" && (
 				<VercelAIGatewayProvider currentMode={currentMode} isPopup={isPopup} showModelOptions={showModelOptions} />
 			)}
 
+
+
 			{apiConfiguration && selectedProvider === "sambanova" && (
 				<SambanovaProvider currentMode={currentMode} isPopup={isPopup} showModelOptions={showModelOptions} />
 			)}
+
+
 
 			{apiConfiguration && selectedProvider === "bedrock" && (
 				<BedrockProvider currentMode={currentMode} isPopup={isPopup} showModelOptions={showModelOptions} />
 			)}
 
+
+
 			{apiConfiguration && selectedProvider === "vertex" && (
 				<VertexProvider currentMode={currentMode} isPopup={isPopup} showModelOptions={showModelOptions} />
 			)}
+
+
 
 			{apiConfiguration && selectedProvider === "gemini" && (
 				<GeminiProvider currentMode={currentMode} isPopup={isPopup} showModelOptions={showModelOptions} />
 			)}
 
+
+
 			{apiConfiguration && selectedProvider === "requesty" && (
 				<RequestyProvider currentMode={currentMode} isPopup={isPopup} showModelOptions={showModelOptions} />
 			)}
+
+
 
 			{apiConfiguration && selectedProvider === "fireworks" && (
 				<FireworksProvider currentMode={currentMode} isPopup={isPopup} showModelOptions={showModelOptions} />
 			)}
 
+
+
 			{apiConfiguration && selectedProvider === "vscode-lm" && <VSCodeLmProvider currentMode={currentMode} />}
+
+
 
 			{apiConfiguration && selectedProvider === "groq" && (
 				<GroqProvider currentMode={currentMode} isPopup={isPopup} showModelOptions={showModelOptions} />
@@ -438,49 +540,79 @@ const ApiOptions = ({ showModelOptions, apiErrorMessage, modelIdErrorMessage, is
 				<LiteLlmProvider currentMode={currentMode} isPopup={isPopup} showModelOptions={showModelOptions} />
 			)}
 
+
+
 			{apiConfiguration && selectedProvider === "lmstudio" && (
 				<LMStudioProvider currentMode={currentMode} isPopup={isPopup} showModelOptions={showModelOptions} />
 			)}
+
+
 
 			{apiConfiguration && selectedProvider === "ollama" && (
 				<OllamaProvider currentMode={currentMode} isPopup={isPopup} showModelOptions={showModelOptions} />
 			)}
 
+
+
 			{apiConfiguration && selectedProvider === "moonshot" && (
 				<MoonshotProvider currentMode={currentMode} isPopup={isPopup} showModelOptions={showModelOptions} />
 			)}
+
+
 
 			{apiConfiguration && selectedProvider === "huggingface" && (
 				<HuggingFaceProvider currentMode={currentMode} isPopup={isPopup} showModelOptions={showModelOptions} />
 			)}
 
+
+
 			{apiConfiguration && selectedProvider === "nebius" && (
 				<NebiusProvider currentMode={currentMode} isPopup={isPopup} showModelOptions={showModelOptions} />
 			)}
+
+
 
 			{apiConfiguration && selectedProvider === "xai" && (
 				<XaiProvider currentMode={currentMode} isPopup={isPopup} showModelOptions={showModelOptions} />
 			)}
 
+
+
 			{apiConfiguration && selectedProvider === "cerebras" && (
 				<CerebrasProvider currentMode={currentMode} isPopup={isPopup} showModelOptions={showModelOptions} />
 			)}
+
+
 
 			{apiConfiguration && selectedProvider === "sapaicore" && (
 				<SapAiCoreProvider currentMode={currentMode} isPopup={isPopup} showModelOptions={showModelOptions} />
 			)}
 
+
+
 			{apiConfiguration && selectedProvider === "huawei-cloud-maas" && (
 				<HuaweiCloudMaasProvider currentMode={currentMode} isPopup={isPopup} showModelOptions={showModelOptions} />
 			)}
+
+
 
 			{apiConfiguration && selectedProvider === "dify" && (
 				<DifyProvider currentMode={currentMode} isPopup={isPopup} showModelOptions={showModelOptions} />
 			)}
 
+
+
 			{apiConfiguration && selectedProvider === "zai" && (
 				<ZAiProvider currentMode={currentMode} isPopup={isPopup} showModelOptions={showModelOptions} />
 			)}
+
+
+
+			{apiConfiguration && selectedProvider === "puter" && (
+				<PuterProvider currentMode={currentMode} isPopup={isPopup} showModelOptions={showModelOptions} />
+			)}
+
+
 
 			{apiErrorMessage && (
 				<p
@@ -506,12 +638,18 @@ const ApiOptions = ({ showModelOptions, apiErrorMessage, modelIdErrorMessage, is
 	)
 }
 
+
+
 export default ApiOptions
+
+
 
 const ProviderDropdownWrapper = styled.div`
 	position: relative;
 	width: 100%;
 `
+
+
 
 const ProviderDropdownList = styled.div`
 	position: absolute;
@@ -527,15 +665,24 @@ const ProviderDropdownList = styled.div`
 	border-bottom-right-radius: 3px;
 `
 
+
+
 const ProviderDropdownItem = styled.div<{ isSelected: boolean }>`
 	padding: 5px 10px;
 	cursor: pointer;
 	word-break: break-all;
 	white-space: normal;
 
+
+
 	background-color: ${({ isSelected }) => (isSelected ? "var(--vscode-list-activeSelectionBackground)" : "inherit")};
+
+
 
 	&:hover {
 		background-color: var(--vscode-list-activeSelectionBackground);
 	}
 `
+
+
+
