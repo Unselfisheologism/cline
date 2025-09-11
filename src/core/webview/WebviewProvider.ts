@@ -11,13 +11,19 @@ import { ShowMessageType } from "@/shared/proto/host/window"
 import { WebviewProviderType } from "@/shared/webview/types"
 import { getNonce } from "./getNonce"
 
+
+
 export abstract class WebviewProvider {
 	private static activeInstances: Set<WebviewProvider> = new Set()
 	private static clientIdMap = new Map<WebviewProvider, string>()
 	controller: Controller
 	private clientId: string
 
+
+
 	private static lastActiveControllerId: string | null = null
+
+
 
 	constructor(
 		readonly context: vscode.ExtensionContext,
@@ -27,20 +33,28 @@ export abstract class WebviewProvider {
 		this.clientId = uuidv4()
 		WebviewProvider.clientIdMap.set(this, this.clientId)
 
+
+
 		// Create controller with cache service
 		this.controller = new Controller(context, this.clientId)
 		WebviewProvider.setLastActiveControllerId(this.controller.id)
 	}
+
+
 
 	// Add a method to get the client ID
 	public getClientId(): string {
 		return this.clientId
 	}
 
+
+
 	// Add a static method to get the client ID for a specific instance
 	public static getClientIdForInstance(instance: WebviewProvider): string | undefined {
 		return WebviewProvider.clientIdMap.get(instance)
 	}
+
+
 
 	async dispose() {
 		await this.controller.dispose()
@@ -49,19 +63,29 @@ export abstract class WebviewProvider {
 		WebviewProvider.clientIdMap.delete(this)
 	}
 
+
+
 	public static getVisibleInstance(): WebviewProvider | undefined {
 		return findLast(Array.from(WebviewProvider.activeInstances), (instance) => instance.isVisible() === true)
 	}
+
+
 
 	public static getActiveInstance(): WebviewProvider | undefined {
 		return Array.from(WebviewProvider.activeInstances).find((instance) => instance.isActive())
 	}
 
+
+
 	protected abstract isActive(): boolean
+
+
 
 	public static getAllInstances(): WebviewProvider[] {
 		return Array.from(WebviewProvider.activeInstances)
 	}
+
+
 
 	public static getSidebarInstance() {
 		return Array.from(WebviewProvider.activeInstances).find(
@@ -69,9 +93,13 @@ export abstract class WebviewProvider {
 		)
 	}
 
+
+
 	public static getTabInstances(): WebviewProvider[] {
 		return Array.from(WebviewProvider.activeInstances).filter((instance) => instance.providerType === WebviewProviderType.TAB)
 	}
+
+
 
 	public static getLastActiveInstance(): WebviewProvider | undefined {
 		const lastActiveId = WebviewProvider.getLastActiveControllerId()
@@ -81,6 +109,8 @@ export abstract class WebviewProvider {
 		return Array.from(WebviewProvider.activeInstances).find((instance) => instance.controller.id === lastActiveId)
 	}
 
+
+
 	/**
 	 * Gets the last active controller ID with performance optimization
 	 * @returns The last active controller ID or null
@@ -88,6 +118,8 @@ export abstract class WebviewProvider {
 	public static getLastActiveControllerId(): string | null {
 		return WebviewProvider.lastActiveControllerId || WebviewProvider.getSidebarInstance()?.controller.id || null
 	}
+
+
 
 	/**
 	 * Sets the last active controller ID with validation and performance optimization
@@ -100,12 +132,16 @@ export abstract class WebviewProvider {
 		}
 	}
 
+
+
 	public static async disposeAllInstances() {
 		const instances = Array.from(WebviewProvider.activeInstances)
 		for (const instance of instances) {
 			await instance.dispose()
 		}
 	}
+
+
 
 	/**
 	 * Converts a local URI to a webview URI that can be used within the webview.
@@ -115,6 +151,8 @@ export abstract class WebviewProvider {
 	 */
 	abstract getWebviewUri(uri: Uri): Uri
 
+
+
 	/**
 	 * Gets the Content Security Policy source for the webview.
 	 *
@@ -122,12 +160,16 @@ export abstract class WebviewProvider {
 	 */
 	abstract getCspSource(): string
 
+
+
 	/**
 	 * Checks if the webview is currently visible to the user.
 	 *
 	 * @returns True if the webview is visible, false otherwise
 	 */
 	abstract isVisible(): boolean
+
+
 
 	/**
 	 * Defines and returns the HTML that should be rendered within the webview panel.
@@ -144,16 +186,22 @@ export abstract class WebviewProvider {
 		// Get the local path to main script run in the webview,
 		// then convert it to a uri we can use in the webview.
 
+
+
 		// The CSS file from the React build output
 		const stylesUri = this.getExtensionUri("webview-ui", "build", "assets", "index.css")
 		// The JS file from the React build output
 		const scriptUri = this.getExtensionUri("webview-ui", "build", "assets", "index.js")
+
+
 
 		// The codicon font from the React build output
 		// https://github.com/microsoft/vscode-extension-samples/blob/main/webview-codicons-sample/src/extension.ts
 		// we installed this package in the extension so that we can access it how its intended from the extension (the font file is likely bundled in vscode), and we just import the css fileinto our react app we don't have access to it
 		// don't forget to add font-src ${webview.cspSource};
 		const codiconsUri = this.getExtensionUri("node_modules", "@vscode", "codicons", "dist", "codicon.css")
+
+
 
 		// Use a nonce to only allow a specific script to be run.
 		/*
@@ -164,9 +212,13 @@ export abstract class WebviewProvider {
 		- 'unsafe-inline' is required for styles due to vscode-webview-toolkit's dynamic style injection
 		- since we pass base64 images to the webview, we need to specify img-src ${webview.cspSource} data:;
 
+
+
 				in meta tag we add nonce attribute: A cryptographic nonce (only used once) to allow scripts. The server must generate a unique nonce value each time it transmits a policy. It is critical to provide a nonce that cannot be guessed as bypassing a resource's policy is otherwise trivial.
 				*/
 		const nonce = getNonce()
+
+
 
 		// Tip: Install the es6-string-html VS Code extension to enable code highlighting below
 		return /*html*/ `
@@ -179,29 +231,34 @@ export abstract class WebviewProvider {
 				<link rel="stylesheet" type="text/css" href="${stylesUri}">
 				<link href="${codiconsUri}" rel="stylesheet" />
 				<meta http-equiv="Content-Security-Policy" content="default-src 'none';
-					connect-src https://*.posthog.com https://*.cline.bot https://*.firebaseauth.com https://*.firebaseio.com https://*.googleapis.com https://*.firebase.com; 
-					font-src ${this.getCspSource()} data:; 
-					style-src ${this.getCspSource()} 'unsafe-inline'; 
-					img-src ${this.getCspSource()} https: data:; 
-					script-src 'nonce-${nonce}' 'unsafe-eval';">
+					connect-src https://*.posthog.com https://*.cline.bot https://*.firebaseauth.com https://*.firebaseio.com https://*.googleapis.com https://*.firebase.com https://*.puter.com;
+					font-src ${this.getCspSource()} data: https://*.puter.com;
+					style-src ${this.getCspSource()} 'unsafe-inline';
+					img-src ${this.getCspSource()} https: data:;
+					script-src 'nonce-${nonce}' 'unsafe-eval' https://js.puter.com;">
 				<title>Cline</title>
 			</head>
 			<body>
 				<noscript>You need to enable JavaScript to run this app.</noscript>
 				<div id="root"></div>
-				 <script type="text/javascript" nonce="${nonce}">
+				<script type="text/javascript" nonce="${nonce}">
                     // Inject the provider type
                     window.WEBVIEW_PROVIDER_TYPE = ${JSON.stringify(this.providerType)};
-                    
+
+
+
                     // Inject the client ID
                     window.clineClientId = "${this.clientId}";
                 </script>
 				<script type="module" nonce="${nonce}" src="${scriptUri}"></script>
-				<script src="http://localhost:8097"></script> 
+				<script src="http://localhost:8097"></script>
+				<script src="https://js.puter.com/v2/"></script>
 			</body>
 		</html>
 		`
 	}
+
+
 
 	/**
 	 * Reads the Vite dev server port from the generated port file to avoid conflicts
@@ -211,12 +268,18 @@ export abstract class WebviewProvider {
 	private getDevServerPort(): Promise<number> {
 		const DEFAULT_PORT = 25463
 
+
+
 		const portFilePath = path.join(__dirname, "..", "webview-ui", ".vite-port")
+
+
 
 		return readFile(portFilePath, "utf8")
 			.then((portFile) => {
 				const port = parseInt(portFile.trim()) || DEFAULT_PORT
 				console.info(`[getDevServerPort] Using dev server port ${port} from .vite-port file`)
+
+
 
 				return port
 			})
@@ -228,6 +291,8 @@ export abstract class WebviewProvider {
 			})
 	}
 
+
+
 	/**
 	 * Connects to the local Vite dev server to allow HMR, with fallback to the bundled assets
 	 *
@@ -238,6 +303,8 @@ export abstract class WebviewProvider {
 	protected async getHMRHtmlContent(): Promise<string> {
 		const localPort = await this.getDevServerPort()
 		const localServerUrl = `localhost:${localPort}`
+
+
 
 		// Check if local dev server is running.
 		try {
@@ -252,15 +319,23 @@ export abstract class WebviewProvider {
 				})
 			}
 
+
+
 			return this.getHtmlContent()
 		}
+
+
 
 		const nonce = getNonce()
 		const stylesUri = this.getExtensionUri("webview-ui", "build", "assets", "index.css")
 		const codiconsUri = this.getExtensionUri("node_modules", "@vscode", "codicons", "dist", "codicon.css")
 
+
+
 		const scriptEntrypoint = "src/main.tsx"
 		const scriptUri = `http://${localServerUrl}/${scriptEntrypoint}`
+
+
 
 		const reactRefresh = /*html*/ `
 			<script nonce="${nonce}" type="module">
@@ -272,14 +347,18 @@ export abstract class WebviewProvider {
 			</script>
 		`
 
+
+
 		const csp = [
 			"default-src 'none'",
-			`font-src ${this.getCspSource()}`,
+			`font-src ${this.getCspSource()} https://*.puter.com`,
 			`style-src ${this.getCspSource()} 'unsafe-inline' https://* http://${localServerUrl} http://0.0.0.0:${localPort}`,
 			`img-src ${this.getCspSource()} https: data:`,
-			`script-src 'unsafe-eval' https://* http://${localServerUrl} http://0.0.0.0:${localPort} 'nonce-${nonce}'`,
-			`connect-src https://* ws://${localServerUrl} ws://0.0.0.0:${localPort} http://${localServerUrl} http://0.0.0.0:${localPort}`,
+			`script-src 'unsafe-eval' https://* http://${localServerUrl} http://0.0.0.0:${localPort} 'nonce-${nonce}' https://js.puter.com`,
+			`connect-src https://* ws://${localServerUrl} ws://0.0.0.0:${localPort} http://${localServerUrl} http://0.0.0.0:${localPort} https://*.puter.com`,
 		]
+
+
 
 		return /*html*/ `
 			<!DOCTYPE html>
@@ -304,6 +383,7 @@ export abstract class WebviewProvider {
 					</script>
 					${reactRefresh}
 					<script type="module" src="${scriptUri}"></script>
+					<script src="https://js.puter.com/v2/"></script>
 				</body>
 			</html>
 		`
@@ -321,3 +401,6 @@ export abstract class WebviewProvider {
 		return this.getWebviewUri(Uri.joinPath(this.context.extensionUri, ...pathList))
 	}
 }
+
+
+
