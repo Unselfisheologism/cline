@@ -1,6 +1,7 @@
 import { Anthropic } from "@anthropic-ai/sdk"
 import { ApiConfiguration, ModelInfo, QwenApiRegions } from "@shared/api"
 import { Mode } from "@shared/storage/types"
+import { PuterHandler } from "../../api/providers/puter"
 import { AnthropicHandler } from "./providers/anthropic"
 import { AskSageHandler } from "./providers/asksage"
 import { BasetenHandler } from "./providers/baseten"
@@ -376,6 +377,12 @@ function createHandlerForProvider(
 				zaiApiKey: options.zaiApiKey,
 				apiModelId: mode === "plan" ? options.planModeApiModelId : options.actModeApiModelId,
 			})
+		case "puter":
+			return new PuterHandler({
+				onRetryAttempt: options.onRetryAttempt,
+				planModeApiModelId: options.planModeApiModelId,
+				actModeApiModelId: options.actModeApiModelId,
+			})	
 		default:
 			return new AnthropicHandler({
 				onRetryAttempt: options.onRetryAttempt,
