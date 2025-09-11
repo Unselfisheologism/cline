@@ -2,20 +2,6 @@ import { ApiHandlerOptions, ModelInfo } from "@shared/api"
 import { ApiHandler } from "../../core/api/index"
 import { ApiStream } from "../../core/api/transform/stream"
 
-
-
-// Custom types for Puter AI since we can't use Anthropic types
-interface MessageParam {
-	role: "user" | "assistant" | "system"
-	content: string | Array<{ type: "text"; text: string }>
-}
-
-
-
-type MessagesParam = MessageParam[]
-
-
-
 // Define the global puter interface based on puter.js documentation
 declare global {
 	namespace globalThis {
@@ -82,7 +68,7 @@ export class PuterHandler implements ApiHandler {
 
 
 
-	async *createMessage(systemPrompt: string, messages: MessagesParam): ApiStream {
+	async *createMessage(systemPrompt: string, messages: Anthropic.Messages.MessageParam[]): ApiStream {
 		await this.ensurePuterInitialized()
 
 
@@ -153,7 +139,7 @@ export class PuterHandler implements ApiHandler {
 
 
 
-	private convertMessagesToPrompt(systemPrompt: string, messages: MessagesParam): string {
+	private convertMessagesToPrompt(systemPrompt: string, messages: Anthropic.Messages.MessageParam[]): { system: string; messages: any[] } {
 		// Convert anthropic message format to simple prompt for puter
 		let prompt = ""
 
