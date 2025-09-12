@@ -1,7 +1,7 @@
 import { ApiHandlerOptions, ModelInfo } from "@shared/api"
 import { ApiHandler } from "../../core/api/index"
 import { ApiStream } from "../../core/api/transform/stream"
-
+import Anthropic from "@anthropic-ai/sdk";
 // Define the global puter interface based on puter.js documentation
 declare global {
 	namespace globalThis {
