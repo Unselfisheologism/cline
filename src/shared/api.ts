@@ -36,6 +36,7 @@ export type ApiProvider =
 	| "baseten"
 	| "vercel-ai-gateway"
 	| "zai"
+    | "puter"
 
 export interface ApiHandlerOptions {
 	// Global configuration (not mode-specific)
