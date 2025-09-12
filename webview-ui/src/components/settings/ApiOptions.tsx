@@ -608,9 +608,9 @@ const ApiOptions = ({ showModelOptions, apiErrorMessage, modelIdErrorMessage, is
 
 
 
-			{apiConfiguration && selectedProvider === "puter" && (
-				<PuterProvider currentMode={currentMode} isPopup={isPopup} showModelOptions={showModelOptions} />
-			)}
+			{apiConfiguration && selectedProvider === ApiProvider.Puter && (
+			    <PuterProvider currentMode={currentMode} isPopup={isPopup} showModelOptions={showModelOptions} />
+		    )}
 
 
 
