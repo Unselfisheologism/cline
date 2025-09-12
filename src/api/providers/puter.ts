@@ -140,39 +140,43 @@ export class PuterHandler implements ApiHandler {
 
 
 	private convertMessagesToPrompt(systemPrompt: string, messages: Anthropic.Messages.MessageParam[]): { system: string; messages: any[] } {
-		// Convert anthropic message format to simple prompt for puter
-		let prompt = ""
+	// Convert anthropic message format to puter format
+	const convertedMessages = messages.map(message => {
+		const role = message.role;
+		let content = [];
 
-
-
-		if (systemPrompt) {
-			prompt += `System: ${systemPrompt}\n\n`
+		if (Array.isArray(message.content)) {
+			content = message.content.map((c: any) => {
+				if (c.type === "text") {
+					return { type: "text", text: c.text };
+				} else if (c.type === "image_url") {
+					// Handle image content
+					return {
+						type: "image",
+						source: {
+							type: "base64",
+							media_type: c.image_url.url.split(";")[0].split(":")[1],
+							data: c.image_url.url.split(",")[1]
+						}
+					};
+				}
+				return c;
+			});
+		} else {
+			content = [{ type: "text", text: message.content as string }];
 		}
 
+		return {
+			role: role,
+			content: content
+		};
+	});
 
-
-		for (const message of messages) {
-			const role = message.role === "user" ? "User" : "Assistant"
-			let content = ""
-
-
-
-			if (Array.isArray(message.content)) {
-				content = message.content.map((c: any) => (typeof c === "string" ? c : c.type === "text" ? c.text : "")).join(" ")
-			} else {
-				content = message.content as string
-			}
-
-
-
-			prompt += `${role}: ${content}\n\n`
-		}
-
-
-
-		return prompt
-	}
-
+	return {
+		system: systemPrompt,
+		messages: convertedMessages
+	};
+}
 
 
 	getModel(): { id: string; info: ModelInfo } {
